@@ -42,17 +42,16 @@
   [input-data]
   (->> input-data 
        (map parse-boot-code)
-       (map-indexed (fn [idx instruction]
-                      (assoc instruction :idx idx)))))
+       (map-indexed (fn [idx instruction] (assoc instruction :idx idx)))))
 
 (defn initiate-guide
   [input-data]
-  (let [instructions {:next-idx 0
-                      :acc 0
-                      :visited [] }]
+  (let [guide {:next-idx 0
+               :acc 0
+               :visited []}]
     (->> input-data
          create-instructions
-         (assoc instructions :instructions))))
+         (assoc guide :instructions))))
 
 (defn execute
   [guide]
@@ -63,10 +62,10 @@
         operation (:operation instruction)
         argument (:argument instruction)
         idx (:idx instruction)]
-    (->> (case operation
-           "jmp" (update-info guide 0 (+ idx argument))
-           "nop" (update-info guide 0 (inc idx))
-           "acc" (update-info guide argument (inc idx))))))
+    (case operation
+      "jmp" (update-info guide 0 (+ idx argument))
+      "nop" (update-info guide 0 (inc idx))
+      "acc" (update-info guide argument (inc idx)))))
 
 (defn update-guide
   [guide increment next-idx]
