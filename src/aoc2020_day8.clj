@@ -19,21 +19,14 @@
 ;; operation을 실행할 때 마다 idx를 visited 에 추가한다. 이때 이미 들어있으면 실행을 멈추고 값을 반환한다.
 
 
-(defn get-argument
-  [operator value-str]
-  (let [value (Integer/parseInt value-str)]
-    (if (= operator "-")
-      (- value)
-      value)))
-
 (defn convert-to-map
-  [[operation operator-str value-str]]
+  [[operation argument]]
   (hash-map :operation operation
-            :argument (get-argument operator-str value-str)))
+            :argument (Integer/parseInt argument)))
 
 (defn parse-boot-code
   [instruction-str]
-  (->> (re-seq #"(\w+) ([\-\+])(\d+)" instruction-str)
+  (->> (re-seq #"(\w+) ([\-\+]\d+)" instruction-str)
        first
        next
        convert-to-map))
@@ -44,6 +37,7 @@
        (map parse-boot-code)
        (map-indexed (fn [idx instruction] (assoc instruction :idx idx)))))
 
+
 (defn initiate-guide
   [input-data]
   (let [guide {:next-idx 0
@@ -52,6 +46,14 @@
     (->> input-data
          create-instructions
          (assoc guide :instructions))))
+
+
+(defn update-guide
+  [guide increment next-idx]
+  (-> guide
+      (assoc :next-idx next-idx)
+      (update :acc + increment)))
+
 
 (defn execute
   [guide]
@@ -63,19 +65,16 @@
         argument (:argument instruction)
         idx (:idx instruction)]
     (case operation
-      "jmp" (update-info guide 0 (+ idx argument))
-      "nop" (update-info guide 0 (inc idx))
-      "acc" (update-info guide argument (inc idx)))))
+      "jmp" (update-guide guide 0 (+ idx argument))
+      "nop" (update-guide guide 0 (inc idx))
+      "acc" (update-guide guide argument (inc idx)))))
 
-(defn update-guide
-  [guide increment next-idx]
-  (-> guide
-      (assoc :next-idx next-idx)
-      (update :acc + increment)))
 
 (defn visited?
   [guide]
-  (some (set (vector (:next-idx guide))) (:visited guide)))
+  (some (set (vector (:next-idx guide)))
+        (:visited guide)))
+
 
 (defn solve-part1
   [input-data]
@@ -87,6 +86,27 @@
             guide
             (range))))
 
-(comment 
-  (solve-part1 input-data))
+;; ------------------------------
+;; solve-part1 lazy-seq 이용하여 풀기
+
+(defn solve-part1-with-lazy-seq
+  [input-data]
+  (let [guide (initiate-guide input-data)]
+    (->> guide
+         (iterate execute)
+         (filter visited?)
+         first
+         :acc)))
+
+;; ------------------------------
+;; execute case 대신 defmulti 써보기
+
+(defn execute-with-defmulti
+  [guide]
+  )
+
+
+(comment
+  (solve-part1 input-data)
+  (solve-part1-with-lazy-seq input-data))
 
