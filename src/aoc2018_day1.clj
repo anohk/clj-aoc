@@ -27,7 +27,7 @@
 
 
 (comment
-  (def input-data (->> (slurp "../data/aoc2018_day1_data")
+  (def input-data (->> (slurp "data/aoc2018_day1_data")
                        (clojure.string/split-lines)
                        (map #(Integer/parseInt %))))
   (part-1 input-data)

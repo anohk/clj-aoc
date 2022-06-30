@@ -1,6 +1,6 @@
 (ns aoc2018_day5)
 
-(def input-data (->> (slurp "../data/aoc2018_day5_data")))
+(def input-data (->> (slurp "data/aoc2018_day5_data")))
 
 
 ;; ----------------------------------------------------------------------

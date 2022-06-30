@@ -44,7 +44,7 @@
   (map parse-fabric strings))
 
 
-(def input-data (->> (slurp "../data/aoc2018_day3_data")
+(def input-data (->> (slurp "data/aoc2018_day3_data")
                      (clojure.string/split-lines)))
 
 (def fabrics (parse-fabrics input-data))

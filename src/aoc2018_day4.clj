@@ -45,7 +45,7 @@
 ;; -----------------------------------------------------------------
 
 
-(def input-data (->> (slurp "../data/aoc2018_day4_data")
+(def input-data (->> (slurp "data/aoc2018_day4_data")
                      (clojure.string/split-lines)))
 
 (defn convert-to-map

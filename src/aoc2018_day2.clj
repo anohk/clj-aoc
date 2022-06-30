@@ -23,7 +23,7 @@
 
 
 (comment
-  (def input-data (->> (slurp "../data/aoc2018_day2_data")
+  (def input-data (->> (slurp "data/aoc2018_day2_data")
                        (clojure.string/split-lines)))
   (part-1 input-data)
 
