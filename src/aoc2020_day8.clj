@@ -56,10 +56,10 @@
 
 
 (defn execute
-  [guide]
-  (let [next-idx (:next-idx guide)
-        guide (update guide :visited conj next-idx)
-        instructions (:instructions guide)
+  [{next-idx :next-idx
+    instructions :instructions
+    :as guide}]
+  (let [guide (update guide :visited conj next-idx)
         instruction (first (filter #(= next-idx (:idx %)) instructions))
         operation (:operation instruction)
         argument (:argument instruction)
@@ -68,7 +68,6 @@
       "jmp" (update-guide guide 0 (+ idx argument))
       "nop" (update-guide guide 0 (inc idx))
       "acc" (update-guide guide argument (inc idx)))))
-
 
 (defn visited?
   [guide]
