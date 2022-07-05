@@ -37,7 +37,6 @@
        (map parse-boot-code)
        (map-indexed (fn [idx instruction] (assoc instruction :idx idx)))))
 
-
 (defn initiate-guide
   [input-data]
   (let [guide {:next-idx 0
@@ -47,13 +46,11 @@
          create-instructions
          (assoc guide :instructions))))
 
-
 (defn update-guide
   [guide increment next-idx]
   (-> guide
       (assoc :next-idx next-idx)
       (update :acc + increment)))
-
 
 (defn execute
   [{next-idx :next-idx
@@ -74,7 +71,6 @@
   (some (set (vector (:next-idx guide)))
         (:visited guide)))
 
-
 (defn solve-part1
   [input-data]
   (let [guide (initiate-guide input-data)]
@@ -84,6 +80,7 @@
                 (execute guide)))
             guide
             (range))))
+
 
 ;; ------------------------------
 ;; solve-part1 lazy-seq 이용하여 풀기
@@ -99,13 +96,3 @@
 
 ;; ------------------------------
 ;; execute case 대신 defmulti 써보기
-
-(defn execute-with-defmulti
-  [guide]
-  )
-
-
-(comment
-  (solve-part1 input-data)
-  (solve-part1-with-lazy-seq input-data))
-
