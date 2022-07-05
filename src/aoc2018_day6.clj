@@ -1,6 +1,6 @@
 (ns aoc2018_day6)
 
-(def input-data (->> (slurp "../data/aoc2018_day6_data")
+(def input-data (->> (slurp "data/aoc2018_day6_data")
                      (clojure.string/split-lines)))
 
 ;; ----------------------------------------------------------
@@ -91,10 +91,6 @@
   (-> (vec (range start end))
       (conj end)))
 
-(defn make-coordinate
-  [x y-positions]
-  (->> y-positions
-      (map #(vector x %))))
 
 (defn remove-targets
   [target-coordinates all-coordinates]
@@ -102,7 +98,7 @@
 
 
 (defn get-border-coordinates
-  ;; 경계 라인의 좌표를 구한다.
+  "경계 라인의 좌표를 구한다."
   [coordinates]
   (let [border-range (get-border-range coordinates)
         x-positions (apply inclusive-range (:x-positions border-range))
@@ -111,7 +107,6 @@
         max-x (last x-positions)
         min-y (first y-positions)
         max-y (last y-positions)]
-
     (vec (distinct (concat (map #(vector min-x %) y-positions)
                            (map #(vector max-x %) y-positions)
                            (map #(vector % min-y) x-positions)
@@ -119,13 +114,12 @@
 
 
 (defn get-unspecified-coordinates
-  ;; target 좌표를 제외하고 근거리 좌표 계산을 할 좌표 시퀀스
+  "근거리 좌표 계산을 할 좌표 시퀀스를 구한다"
   [coordinates]
   (let [border-range (get-border-range coordinates)
         x-positions (apply inclusive-range (:x-positions border-range))
         y-positions (apply inclusive-range (:y-positions border-range))]
-    (->> (for [x x-positions y y-positions] [x y])
-         (#(remove-targets coordinates %)))))
+    (->> (for [x x-positions y y-positions] [x y]))))
 
 
 (defn calculate-manhattan-distance
@@ -151,6 +145,7 @@
                  #(conj % coordinate))
       targets)))
 
+
 (defn include-border?
   [border-coordinate target]
   (seq (clojure.set/intersection (set (:area target))
@@ -162,13 +157,15 @@
   (->>(re-seq #"(\d+), (\d+)" coordinate-string)
       first
       next
-      (map #(Integer/parseInt %))))
+      (mapv #(Integer/parseInt %))))
 
 
 (defn solve-part1
   [input-data]
   (let [coordinates (map convert-to-coordinate input-data)
-        targets (mapv #(hash-map :target (vec %) :area []) coordinates)
+        targets (mapv #(hash-map :target (vec %)
+                                 :area [])
+                      coordinates)
         unspecified-coordinates (get-unspecified-coordinates coordinates)
         border-coordinate (get-border-coordinates coordinates)]
     (->> unspecified-coordinates
@@ -176,11 +173,55 @@
          (remove #(include-border? border-coordinate %))
          (map #(count (:area %)))
          sort
-         last
-         inc)))
+         last)))
 
-(solve-part1 input-data)
+(comment 
+  (solve-part1 input-data))
 
-;; inc --> 제거했던 target 좌표 추가해야 함
 
+;; ----------------------------------------------------------
+;; part2
+;;
+;; 특정 지점에서 모든 target들 까지의 맨하튼 거리의 합이 n 이하인 영역의 크기 구하기
+;; - 확인해야하는 영역의 각 좌표마다 모든 target들과의 맨하튼 거리 합을 구해
+;;   n 이하인 경우 safe-area 시퀀스에 담고 해당 시퀀스의 길이를 구한다.
+;;
+;;
+;; ------------
+;; * 사용할 데이터
+;; ------------
+;;
+;; target들의 좌표 시퀀스
+;; [[1 2] [23 62] [44 163] ...]
+;;
+;; safe-area의 좌표 시퀀스
+;; [[32 46] [42 166] [46 23] ...]
+
+
+
+(defn get-relative-coordinates-within-max-distance
+  "좌표 x, y의 절대값 합이 max-distance 좌표 벡터를 구한다."
+  [max-distance]
+  (let [x-positions (inclusive-range 0 max-distance)
+        y-positions (reverse x-positions)
+        positive-positions (map vec (partition 2 (interleave x-positions y-positions)))]
+    (->> (concat positive-positions
+                 (map #(update-in % [0] -) positive-positions)
+                 (map #(update-in % [1] -) positive-positions)
+                 (map #(mapv - %) positive-positions))
+         distinct)))
+
+
+(defn solve-part2
+  [input-data max-distance]
+  (let [target-coordinates (mapv convert-to-coordinate input-data)
+        unspecified-coordinates (get-unspecified-coordinates target-coordinates)
+        relative-coordinates-within-max-distance (get-relative-coordinates-within-max-distance max-distance)]
+    (->> unspecified-coordinates
+         (map (partial sum-manhattan-distance-to-target target-coordinates))
+         (filter #(< % max-distance))
+         count)))
+
+(comment
+  (solve-part2 input-data 10000))
 
