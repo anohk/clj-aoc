@@ -71,10 +71,6 @@
 
 (def sleep-logs (parse-sleep-logs input-data))
 
-(first sleep-logs)
-
-(println (first (parse-sleep-logs input-data)))
-
 
 ;; ---------------------------------------------------------------------------
 ;; Group By Guard
@@ -104,6 +100,7 @@
   [log-map]
   (clojure.string/includes? (:msg log-map) "Guard"))
 
+
 (defn get-guard-id
   [shift-log]
   (->> shift-log
@@ -113,12 +110,14 @@
        last
        (Integer/parseInt)))
 
+
 (defn get-slept-mins
   [sleep-logs]
   (->> sleep-logs
        (partition-all 2)
        (map (fn [[fall-asleep wakes-up]]
               (range (:min fall-asleep) (:min wakes-up))))))
+
 
 (defn get-top-frequency
   [slept-mins]
@@ -128,10 +127,12 @@
        (sort-by val)
        last))
 
+
 (defn make-guard-record
   [[shift-logs sleep-logs]]
   {:id (get-guard-id (last shift-logs))
    :slept-mins (get-slept-mins sleep-logs)})
+
 
 (defn merge-by-guard
   [guard-records]
@@ -141,10 +142,12 @@
        (map #(->> {:id (:id (first %))
                    :slept-mins (mapcat :slept-mins %)}))))
 
+
 (defn add-top-frequency
   [guard-records]
   (->> guard-records
        (#(assoc % :top-frequency (get-top-frequency (:slept-mins %))))))
+
 
 (defn group-by-guard
   [sleep-logs]
@@ -181,13 +184,14 @@
 
 
 (defn solve-part1
-  [guard-sleep-records]
+  [guard-sleep-records] ;; input-data를 인자로 받아 처리하도록 변경 필요
   (->> guard-sleep-records
        heavy-sleeper
        (#(* (:id %) (first (:top-frequency %))))))
 
 
-(solve-part1 guard-sleep-records)
+(comment
+  (solve-part1 guard-sleep-records))
 
 ;; ----------------------------------------------------------
 ;; part 2
@@ -198,12 +202,13 @@
 
 
 (defn solve-part2
-  [guard-sleep-records]
+  [guard-sleep-records] ;; input-data를 인자로 받아 처리하도록 변경 필요
   (->> guard-sleep-records
        (sort-by #(->> (last (:top-frequency %))))
        last
        (#(* (:id %) (first (:top-frequency %))))))
 
-(solve-part2 guard-sleep-records)
+(comment
+  (solve-part2 guard-sleep-records))
 
 
