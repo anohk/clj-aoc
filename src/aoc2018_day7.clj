@@ -1,10 +1,7 @@
 (ns aoc2018_day7)
 
-@(def input-data (->> (slurp "data/aoc2018_day7_data")
+(def input-data (->> (slurp "data/aoc2018_day7_data")
                       (clojure.string/split-lines)))
-
-@(def test-input-data (->> (slurp "data/test-data-day7")
-                           (clojure.string/split-lines)))
 
 (defn parse-to-rule
   [string]
@@ -21,19 +18,18 @@
                        (set coll)))
 
 (defn get-processing-time
-  [work]
-  (+ (clojure.string/index-of "ABCDEFGHIJKLMNOPQRSTUVWXYZ" (name work))
-     61))
+  "각 작업마다 소요되는 시간을 구한다.
+   - worker의 수가 1개를 초과하는 경우 문제에서 명시한 알파벳 index + 1 + 60"
+  [work number-of-workers]
+  (if (< 1 number-of-workers)
+    (+ (clojure.string/index-of "ABCDEFGHIJKLMNOPQRSTUVWXYZ" (name work))
+       61)
+    1))
 
 (defn update-processing-time
-  [rules]
+  [number-of-workers rules]
   (map #(assoc % :processing-time
-               (get-processing-time (:work %)))
-       rules))
-
-(defn update-processing-time-1
-  [rules]
-  (map #(assoc % :processing-time 1)
+               (get-processing-time (:work %) number-of-workers))
        rules))
 
 (defn get-last-work
@@ -49,7 +45,7 @@
     (conj rules {:work last-work :next-opts []})))
 
 (defn get-rules
-  [input-data]
+  [input-data number-of-workers]
   (->> input-data
        (map parse-to-rule)
        (group-by :work) 
@@ -57,7 +53,7 @@
               {:work work
                :next-opts (mapcat :next-opt grouped)}))
        add-last-work
-       update-processing-time))
+       (update-processing-time number-of-workers)))
 
 (defn get-prerequisite-rule
   [rules rule]
@@ -95,7 +91,7 @@
 
 (defn initiate-work-state
   [number-of-workers input-data]
-  (let [rules (get-rules input-data)
+  (let [rules (get-rules input-data number-of-workers)
         prerequisite-rules (get-prerequisite-rules rules)]
     {:rules rules
      :prerequisite-rules prerequisite-rules
@@ -106,11 +102,9 @@
      :min-time 0
      :min-time-works []}))
 
-
 (defn get-rules-by-work
   [rules work]
   (filter #(= work (:work %)) rules))
-
 
 (defn ready?
   "현재 작업 가능여부를 판단한다.
@@ -123,7 +117,6 @@
          (nil? (some #{work} (map :work doing)))
          (clojure.set/subset? (set prerequisites)
                               (set done)))))
-
 
 (defn get-possible-works
   [work-state]
@@ -141,12 +134,10 @@
          (map #(hash-map :work (:work %)
                          :remain-time (:processing-time %))))))
 
-
 (defn assign-works
   [work-state]
   (let [possible-works (get-possible-works work-state)]
     (update work-state :doing concat possible-works)))
-
 
 (defn update-remain-time
   [min-time rule]
@@ -157,7 +148,6 @@
   [min-time doing]
   (->> doing
        (map (partial update-remain-time min-time))))
-
 
 (defn update-doing
   "doing 목록을 갱신한다.
@@ -175,7 +165,6 @@
   (let [min-time (:min-time work-state)
         processed-time (:processed-time work-state)]
     (update work-state :processed-time + min-time)))
-
 
 (defn complete-works
   "작업 완료처리
@@ -243,11 +232,14 @@
        (apply str)))
 
 (defn solve-part2
-  [input-data number-of-worker]
+  [input-data number-of-workers]
   (->> input-data
-       (initiate-work-state number-of-worker)
+       (initiate-work-state number-of-workers)
        (iterate execute)
        (filter done?)
        first
        :processed-time))
 
+(comment
+  (solve-part1 input-data)
+  (solve-part2 input-data 5))
