@@ -8,6 +8,7 @@
 ;; part1
 ;; 주어진 문자열에서 문자가 n번 반복하는 것이 있는지 확인한다.
 
+
 (defn is-duplicated-n-times?
   [n coll]
   (->> coll
@@ -15,16 +16,15 @@
        vals
        (some #{n})))
 
-
 (def twice? (partial is-duplicated-n-times? 2))
 
 (def third? (partial is-duplicated-n-times? 3))
-
 
 (defn solve-part1
   [input-data]
   (* (count (filter twice? input-data))
      (count (filter third? input-data))))
+
 
 (comment
   (solve-part1 input-data))
@@ -54,9 +54,6 @@
            (map first)
            (apply str)))))
 
-(comment
-  (map (comp distinct vector) "asdf" "asda"))
-
 (defn solve-part2
   [input-data]
   (->> (for [str1 input-data
@@ -66,6 +63,5 @@
        first))
 
 (comment
-  (solve-part2 input-data)
-  (-> input-data))
+  (solve-part2 input-data))
 
