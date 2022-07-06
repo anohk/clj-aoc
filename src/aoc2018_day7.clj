@@ -149,16 +149,16 @@
   (->> doing
        (map (partial update-remain-time min-time))))
 
-(defn update-doing
-  "doing 목록을 갱신한다.
+(defn decrease-remaining-time
+  "doing 목록의 작업들의 잔여 작업 시간을 감소시킨.
    - min-time 만큼 doing 의 remain-time에서 차감"
   [work-state]
   (let [doing (:doing work-state)
         min-time (:min-time work-state)
-        updated-doing (decrease-min-time min-time doing)]
+        decreased-remaining-time (decrease-min-time min-time doing)]
     (if (empty? doing)
       work-state
-      (assoc work-state :doing updated-doing))))
+      (assoc work-state :doing decreased-remaining-time))))
 
 (defn increase-processed-time
   [work-state]
@@ -211,8 +211,7 @@
       update-min-state
       complete-works
       increase-processed-time
-      update-doing
-      update-min-state))
+      decrease-remaining-time))
 
 (defn done?
   [work-state]
