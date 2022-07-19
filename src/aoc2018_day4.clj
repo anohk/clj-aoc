@@ -208,7 +208,5 @@
        last
        (#(* (:id %) (first (:top-frequency %))))))
 
-(comment
-  (solve-part2 guard-sleep-records))
-
+(comment (solve-part2 guard-sleep-records))
 
