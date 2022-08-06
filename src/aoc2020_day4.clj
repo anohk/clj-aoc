@@ -4,34 +4,11 @@
 
 ;; ----------
 ;; part1
-
-(comment
-  
-  유효한 여권
-  - 필수 필드를 모두 충족해야한다. cid는 옵션 필드
-  - req [:byr :iyr :eyr :hgt :hcl :ecl :pid]
-  - opt [:cid]
-
-  part1 가공한 입력 데이터 모양
-  [{:byr "1999"
-    :iyr "2020"
-    :eyr "2030"
-    :hgt "183cm"
-    :hcl "#fffffd"
-    :ecl "gry"
-    :pid "860033327"
-    :cid "147"}
-   {:byr "1894"
-    :iyr "2015"
-    :eyr "2025"
-    :hgt "165cm"
-    :hcl "#ffffff"
-    :ecl "blk"
-    :pid "842032427"}
-   ...]
-  
-  )
-
+;; 유효한 여권
+;;  - 필수 필드를 모두 충족해야한다. cid는 옵션 필드
+;;  - req [:byr :iyr :eyr :hgt :hcl :ecl :pid]
+;;  - opt [:cid]
+;;
 
 ;; ---------
 ;; 데이터 파싱
@@ -41,6 +18,23 @@
 ;; 2. 개별 string에 newline -> space로 변환
 ;; 3. space를 기준으로 key/value 쌍을 분리
 ;; 4. : 를 기준으로 key/value 형태로 변환
+;;   [{:byr "1999"
+;;    :iyr "2020"
+;;    :eyr "2030"
+;;    :hgt "183cm"
+;;    :hcl "#fffffd"
+;;    :ecl "gry"
+;;   :pid "860033327"
+;;    :cid "147"}
+;;   {:byr "1894"
+;;    :iyr "2015"
+;;    :eyr "2025"
+;;    :hgt "165cm"
+;;    :hcl "#ffffff"
+;;    :ecl "blk"
+;;    :pid "842032427"}
+;;   ...]
+
 
 
 (def input-data
