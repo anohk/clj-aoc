@@ -78,15 +78,133 @@
                    :passport/pid]
           :opt-un [:passport/cid]))
 
-(defn valid? [passport]
-  (s/valid? :valid/passport-v1 passport))
+(defn valid? [target passport]
+  (s/valid? target passport))
 
 (defn solve-part-1 [input-data]
   (let [passports (get-passports input-data)]
     (->> passports
-         (filter valid?)
+         (filter (partial valid? :valid/passport-v1))
          count)))
 
 (comment
   (solve-part-1 input-data))
 
+;; ------
+;; part 2
+;; 필드 제약 추가
+
+;; byr (Birth Year) - four digits; at least 1920 and at most 2002.
+;; iyr (Issue Year) - four digits; at least 2010 and at most 2020.
+;; eyr (Expiration Year) - four digits; at least 2020 and at most 2030.
+
+;; hgt (Height) - a number followed by either cm or in:
+;; If cm, the number must be at least 150 and at most 193.
+;; If in, the number must be at least 59 and at most 76.
+
+;; hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
+;; ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
+;; pid (Passport ID) - a nine-digit number, including leading zeroes.
+
+;; cid (Country ID) - ignored, missing or not.
+
+
+;; ----------------------------
+;; year (birth/issue/expiration)
+;; ----------------------------
+(def four-digit-regex #"^\d{4}$")
+
+(defn four-digits? [val] (re-matches #"^\d{4}$" val))
+
+(defn in-range?
+  [start end val]
+  (let [int-val (Integer/parseInt val)]
+    (and (<= start int-val) (>= end int-val))))
+
+(s/def :constraints/byr (s/and four-digits? #(in-range? 1920 2002 %)))
+(s/def :constraints/iyr (s/and four-digits? #(in-range? 2010 2020 %)))
+(s/def :constraints/eyr (s/and four-digits? #(in-range? 2020 2030 %)))
+
+
+;; ------
+;; height
+;; ------
+(defmulti in-height-range? (fn [n] (:unit n)))
+(defmethod in-height-range? :cm [n]
+  (let [height (:height n)]
+    (and (<= 150 height) (>= 193 height))))
+(defmethod in-height-range? :in [n]
+  (let [height (:height n)]
+    (and (<= 59 height) (>= 76 height))))
+
+(s/def :constraints/hgt in-height-range?)
+
+(comment
+  (height-range {:height 153 :unit :cm})
+  (height-range {:height 66 :unit :in})
+  (s/valid? :constraints/hgt {:height 156 :unit :cm})
+)
+
+;; ----------
+;; hair color
+;; ----------
+(s/def :constraints/hcl #(re-matches #"^#[0-9a-f]{6}$" %))
+
+;; ---------
+;; eye color
+;; ---------
+(def eye-colors #{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"})
+(s/def :constraints/ecl (s/and string? #(eye-colors %)))
+
+;; -----------
+;; passport id
+;; -----------
+(s/def :constraints/pid #(re-matches #"[0-9]{9}$" %))
+
+
+
+(s/def :passport-v2/byr :constraints/byr)
+(s/def :passport-v2/iyr :constraints/iyr)
+(s/def :passport-v2/eyr :constraints/eyr)
+(s/def :passport-v2/hgt :constraints/hgt)
+(s/def :passport-v2/hcl :constraints/hcl)
+(s/def :passport-v2/ecl :constraints/ecl)
+(s/def :passport-v2/pid :constraints/pid)
+(s/def :passport-v2/cid string?)
+
+(s/def :valid/passport-v2
+  (s/keys :req-un [:passport-v2/byr
+                   :passport-v2/iyr
+                   :passport-v2/eyr
+                   :passport-v2/hgt
+                   :passport-v2/hcl
+                   :passport-v2/ecl
+                   :passport-v2/pid]
+          :opt-un [:passport-v2/cid]))
+
+
+(defn height-str-to-map
+  [height-str]
+  (let [height-info (next (re-find #"(\d+)(\w+)" height-str))]
+    {:height (Integer/parseInt (first height-info))
+     :unit (keyword (last height-info))}))
+
+(defn refine-height-info
+  "passport 맵에 hgt키가 있는 경우 문자열 값을 맵으로 변환한다."
+  [passport]
+  (if (:hgt passport)
+    (let [height-str (:hgt passport)]
+      (assoc passport :hgt (height-str-to-map height-str)))
+    passport))
+
+(defn solve-part-2
+  [input-data]
+  (let [passports (get-passports input-data)]
+    (->> passports
+         (map refine-height-info)
+         (filter (partial valid? :valid/passport-v2))
+         count)))
+
+
+(comment
+  (solve-part-2 input-data))
