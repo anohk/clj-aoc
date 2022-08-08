@@ -117,13 +117,24 @@
 (defn four-digits? [val] (re-matches #"^\d{4}$" val))
 
 (defn in-range?
-  [start end val]
-  (let [int-val (Integer/parseInt val)]
+  [start end str-val]
+  (let [int-val (Integer/parseInt str-val)]
     (and (<= start int-val) (>= end int-val))))
+
 
 (s/def :constraints/byr (s/and four-digits? #(in-range? 1920 2002 %)))
 (s/def :constraints/iyr (s/and four-digits? #(in-range? 2010 2020 %)))
 (s/def :constraints/eyr (s/and four-digits? #(in-range? 2020 2030 %)))
+
+(comment
+  (s/valid? :constraints/byr "1920")
+  (s/valid? :constraints/byr "2002")
+
+  (s/valid? :constraints/iyr "2010")
+  (s/valid? :constraints/iyr "2020")
+  
+  (s/valid? :constraints/eyr "2020")
+  (s/valid? :constraints/eyr "2030"))
 
 
 ;; ------
@@ -136,13 +147,16 @@
 (defmethod in-height-range? :in [n]
   (let [height (:height n)]
     (and (<= 59 height) (>= 76 height))))
+(defmethod in-height-range? "" [n]
+  false)
 
-(s/def :constraints/hgt in-height-range?)
+(s/def :constraints/hgt (s/and map? in-height-range?))
 
 (comment
-  (height-range {:height 153 :unit :cm})
-  (height-range {:height 66 :unit :in})
   (s/valid? :constraints/hgt {:height 156 :unit :cm})
+  (s/valid? :constraints/hgt {:height 194 :unit :cm})
+  (s/valid? :constraints/hgt {:height 56 :unit :in})
+  (s/valid? :constraints/hgt {:height 66 :unit :in})
 )
 
 ;; ----------
@@ -185,9 +199,19 @@
 
 (defn height-str-to-map
   [height-str]
-  (let [height-info (next (re-find #"(\d+)(\w+)" height-str))]
-    {:height (Integer/parseInt (first height-info))
-     :unit (keyword (last height-info))}))
+  (let [height-info (next (re-find #"(\d*)(\w*)" height-str))
+        height-str (first height-info)
+        unit-str (last height-info)]
+    (when (and (not= height-str "") (not= unit-str ""))
+      {:height (Integer. height-str)
+       :unit (keyword unit-str)})))
+
+(comment
+  (next (re-find #"(\d+)(\w*)" "166cm"))
+  (height-str-to-map "179cm")
+  (height-str-to-map "179in")
+  (height-str-to-map "cm")
+)
 
 (defn refine-height-info
   "passport 맵에 hgt키가 있는 경우 문자열 값을 맵으로 변환한다."
