@@ -11,21 +11,18 @@
 ;; 2. 개별 string에 newline -> space로 변환
 ;; 3. space를 기준으로 key/value 쌍을 분리
 ;; 4. : 를 기준으로 key/value 형태로 변환
-;;   [{:byr 1999
-;;    :iyr 2020
-;;    :eyr 2030
-;;    :hgt "183cm"
-;;    :hcl "#fffffd"
-;;    :ecl "gry"
-;;    :pid "860033327"
-;;    :cid "147"}
-;;   {:byr 1894
-;;    :iyr 2015
-;;    :eyr 2025
-;;    :hgt "165cm"
-;;    :hcl "#ffffff"
-;;    :ecl "blk"
-;;    :pid "842032427"}
+;;   [{:birth-year 1999
+;;     :issue-year 2020
+;;     :expiration-year 2030
+;;     :heigt {:height 183 :unit :cm}
+;;     :hair-color "#fffffd"
+;;     :eye-color "gry"
+;;     :passport-id "860033327"
+;;     :country-id "147"}
+;;    {:birth-year 1894
+;;     :issue-year 2015
+;;     :height {:height 65 :unit :in}
+;;     :passport-id "842032427"}
 ;;   ...]
 
 
@@ -39,16 +36,32 @@
          (into {})
          clojure.walk/keywordize-keys)))
 
+(def extended-keywords {:byr :birth-year
+                        :iyr :issue-year
+                        :eyr :expiration-year
+                        :hgt :height
+                        :hcl :hair-color
+                        :ecl :eye-color
+                        :pid :passport-id
+                        :cid :country-id})
+
+(defn extend-keyword
+  [keywordized-map]
+  (->> (for [[k v] keywordized-map] [(extended-keywords k) v])
+       (into {})))
+
 (defn get-str-map [input-data]
   (->> input-data
        (clojure.string/split-lines)
        (partition-by #(= "" %))
        (remove #(= "" (first %)))
        (map #(clojure.string/join " " %))
-       (map str->map)))
+       (map str->map)
+       (map extend-keyword)))
 
 (comment
   (get-str-map input-data))
+
 
 ;; -------------------
 ;; parsing height-info
@@ -63,11 +76,11 @@
        :unit (keyword unit-str)})))
 
 (defn refine-height-info
-  "passport 맵에 hgt키가 있는 경우 문자열 값을 맵으로 변환한다."
+  "passport 맵에 height키가 있는 경우 문자열 값을 맵으로 변환한다."
   [passport]
-  (if (:hgt passport)
-    (let [height-str (:hgt passport)]
-      (assoc passport :hgt (height-str->map height-str)))
+  (if (:height passport)
+    (let [height-str (:height passport)]
+      (assoc passport :height (height-str->map height-str)))
     passport))
 
 ;; -----------------
@@ -81,7 +94,7 @@
 (defn refine-year-info
   "passport 맵에 연도와 관련한 키가 있는 경우 문자열 값을 숫자로 변환한다."
   [passport]
-  (let [year-map (select-keys passport [:byr :eyr :iyr])]
+  (let [year-map (select-keys passport [:birth-year :issue-year :expiration-year])]
     (if (not= year-map {})
       (merge passport (year-str->int year-map))
       passport)))
@@ -103,30 +116,30 @@
 ;; ----------
 ;; part1
 ;; 유효한 여권
-;;  - 필수 필드를 모두 충족해야한다. cid는 옵션 필드
-;;  - req [:byr :iyr :eyr :hgt :hcl :ecl :pid]
-;;  - opt [:cid]
+;;  - 필수 필드를 모두 충족해야한다. country-id는 옵션 필드
+;;  - req [:byr :issue-year :expiration-year :height :hair-color :eye-color :passport-id]
+;;  - opt [:country-id]
 ;;
 
-(s/def :passport/byr int?)
-(s/def :passport/iyr int?)
-(s/def :passport/eyr int?)
-(s/def :passport/hgt (s/nilable map?))
-(s/def :passport/hcl string?)
-(s/def :passport/ecl string?)
-(s/def :passport/pid string?)
-(s/def :passport/cid string?)
+(s/def :passport/birth-year int?)
+(s/def :passport/issue-year int?)
+(s/def :passport/expiration-year int?)
+(s/def :passport/height (s/nilable map?))
+(s/def :passport/hair-color string?)
+(s/def :passport/eye-color string?)
+(s/def :passport/passport-id string?)
+(s/def :passport/country-id string?)
 
 
 (s/def :valid/passport-v1
-  (s/keys :req-un [:passport/byr
-                   :passport/iyr
-                   :passport/eyr
-                   :passport/hgt
-                   :passport/hcl
-                   :passport/ecl
-                   :passport/pid]
-          :opt-un [:passport/cid]))
+  (s/keys :req-un [:passport/birth-year
+                   :passport/issue-year
+                   :passport/expiration-year
+                   :passport/height
+                   :passport/hair-color
+                   :passport/eye-color
+                   :passport/passport-id]
+          :opt-un [:passport/country-id]))
 
 (defn valid? [target passport]
   (s/valid? target passport))
@@ -160,16 +173,15 @@
 ;; cid (Country ID) - ignored, missing or not.
 
 
-;; ----------------------------
-;; year (birth/issue/expiration)
-;; ----------------------------
-;; byr, iyr, eyr..코드에서 -> 약어 쓰지말고 풀어쓰기
+;; ----
+;; year
+;; ----
 
 (defn in-range? [start end val] (and (<= start val) (>= end val)))
 
-(s/def :constraints/byr #(in-range? 1920 2002 %))
-(s/def :constraints/iyr #(in-range? 2010 2020 %))
-(s/def :constraints/eyr #(in-range? 2020 2030 %))
+(s/def :constraints/birth-year #(in-range? 1920 2002 %))
+(s/def :constraints/issue-year #(in-range? 2010 2020 %))
+(s/def :constraints/expiration-year #(in-range? 2020 2030 %))
 
 ;; ------
 ;; height
@@ -185,54 +197,54 @@
     (and (<= 59 height) (>= 76 height))))
 
 
-(s/def :constraints/hgt (s/and map? in-height-range?))
+(s/def :constraints/height (s/and map? in-height-range?))
 
 
 
 (comment
-  (s/valid? :constraints/hgt {:height 156 :unit :cm})
-  (s/valid? :constraints/hgt {:height 194 :unit :cm})
-  (s/valid? :constraints/hgt {:height 56 :unit :in})
-  (s/valid? :constraints/hgt {:height 66 :unit :in})
+  (s/valid? :constraints/height {:height 156 :unit :cm})
+  (s/valid? :constraints/height {:height 194 :unit :cm})
+  (s/valid? :constraints/height {:height 56 :unit :in})
+  (s/valid? :constraints/height {:height 66 :unit :in})
 )
 
 ;; ----------
 ;; hair color
 ;; ----------
-(s/def :constraints/hcl #(re-matches #"^#[0-9a-f]{6}$" %))
+(s/def :constraints/hair-color #(re-matches #"^#[0-9a-f]{6}$" %))
 
 ;; ---------
 ;; eye color
 ;; ---------
  
 (def eye-colors #{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"})
-(s/def :constraints/ecl (s/and string? #(eye-colors %)))
+(s/def :constraints/eye-color (s/and string? #(eye-colors %)))
 
 ;; -----------
 ;; passport id
 ;; -----------
-(s/def :constraints/pid #(re-matches #"[0-9]{9}$" %))
+(s/def :constraints/passport-id #(re-matches #"[0-9]{9}$" %))
 
 
 
-(s/def :passport-v2/byr :constraints/byr)
-(s/def :passport-v2/iyr :constraints/iyr)
-(s/def :passport-v2/eyr :constraints/eyr)
-(s/def :passport-v2/hgt :constraints/hgt)
-(s/def :passport-v2/hcl :constraints/hcl)
-(s/def :passport-v2/ecl :constraints/ecl)
-(s/def :passport-v2/pid :constraints/pid)
-(s/def :passport-v2/cid string?)
+(s/def :passport-v2/birth-year :constraints/birth-year)
+(s/def :passport-v2/issue-year :constraints/issue-year)
+(s/def :passport-v2/expiration-year :constraints/expiration-year)
+(s/def :passport-v2/height :constraints/height)
+(s/def :passport-v2/hair-color :constraints/hair-color)
+(s/def :passport-v2/eye-color :constraints/eye-color)
+(s/def :passport-v2/passport-id :constraints/passport-id)
+(s/def :passport-v2/country-id string?)
 
 (s/def :valid/passport-v2
-  (s/keys :req-un [:passport-v2/byr
-                   :passport-v2/iyr
-                   :passport-v2/eyr
-                   :passport-v2/hgt
-                   :passport-v2/hcl
-                   :passport-v2/ecl
-                   :passport-v2/pid]
-          :opt-un [:passport-v2/cid]))
+  (s/keys :req-un [:passport-v2/birth-year
+                   :passport-v2/issue-year
+                   :passport-v2/expiration-year
+                   :passport-v2/height
+                   :passport-v2/hair-color
+                   :passport-v2/eye-color
+                   :passport-v2/passport-id]
+          :opt-un [:passport-v2/country-id]))
 
 
 
