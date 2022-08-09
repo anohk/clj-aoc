@@ -72,7 +72,7 @@
         height-str (first height-info)
         unit-str (last height-info)]
     (when (and (not= height-str "") (not= unit-str ""))
-      {:height (Integer. height-str)
+      {:height (Integer/parseInt height-str)
        :unit (keyword unit-str)})))
 
 (defn refine-height-info
@@ -117,7 +117,7 @@
 ;; part1
 ;; 유효한 여권
 ;;  - 필수 필드를 모두 충족해야한다. country-id는 옵션 필드
-;;  - req [:byr :issue-year :expiration-year :height :hair-color :eye-color :passport-id]
+;;  - req [:birth-year :issue-year :expiration-year :height :hair-color :eye-color :passport-id]
 ;;  - opt [:country-id]
 ;;
 
