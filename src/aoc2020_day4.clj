@@ -2,13 +2,6 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.walk]))
 
-;; ----------
-;; part1
-;; 유효한 여권
-;;  - 필수 필드를 모두 충족해야한다. cid는 옵션 필드
-;;  - req [:byr :iyr :eyr :hgt :hcl :ecl :pid]
-;;  - opt [:cid]
-;;
 
 ;; ---------
 ;; 데이터 파싱
@@ -18,17 +11,17 @@
 ;; 2. 개별 string에 newline -> space로 변환
 ;; 3. space를 기준으로 key/value 쌍을 분리
 ;; 4. : 를 기준으로 key/value 형태로 변환
-;;   [{:byr "1999"
-;;    :iyr "2020"
-;;    :eyr "2030"
+;;   [{:byr 1999
+;;    :iyr 2020
+;;    :eyr 2030
 ;;    :hgt "183cm"
 ;;    :hcl "#fffffd"
 ;;    :ecl "gry"
-;;   :pid "860033327"
+;;    :pid "860033327"
 ;;    :cid "147"}
-;;   {:byr "1894"
-;;    :iyr "2015"
-;;    :eyr "2025"
+;;   {:byr 1894
+;;    :iyr 2015
+;;    :eyr 2025
 ;;    :hgt "165cm"
 ;;    :hcl "#ffffff"
 ;;    :ecl "blk"
@@ -36,37 +29,94 @@
 ;;   ...]
 
 
-
 (def input-data
   (-> (slurp "data/aoc2020_day4_data")))
 
-(defn str-to-map [str]
+(defn str->map [str]
   (let [pair-str (clojure.string/split str #" ")]
     (->> pair-str
          (map #(clojure.string/split % #":"))
          (into {})
          clojure.walk/keywordize-keys)))
 
-(defn get-passports [input-data]
+(defn get-str-map [input-data]
   (->> input-data
        (clojure.string/split-lines)
        (partition-by #(= "" %))
        (remove #(= "" (first %)))
        (map #(clojure.string/join " " %))
-       (map str-to-map)))
+       (map str->map)))
+
+(comment
+  (get-str-map input-data))
+
+;; -------------------
+;; parsing height-info
+;; -------------------
+(defn height-str->map
+  [height-str]
+  (let [height-info (next (re-find #"(\d*)(\w*)" height-str))
+        height-str (first height-info)
+        unit-str (last height-info)]
+    (when (and (not= height-str "") (not= unit-str ""))
+      {:height (Integer. height-str)
+       :unit (keyword unit-str)})))
+
+(defn refine-height-info
+  "passport 맵에 hgt키가 있는 경우 문자열 값을 맵으로 변환한다."
+  [passport]
+  (if (:hgt passport)
+    (let [height-str (:hgt passport)]
+      (assoc passport :hgt (height-str->map height-str)))
+    passport))
+
+;; -----------------
+;; parsing year-info
+;; -----------------
+(defn year-str->int
+  [year-map]
+  (->> (for [[k v] year-map] [k (Integer/parseInt v)])
+       (into {})))
+
+(defn refine-year-info
+  "passport 맵에 연도와 관련한 키가 있는 경우 문자열 값을 숫자로 변환한다."
+  [passport]
+  (let [year-map (select-keys passport [:byr :eyr :iyr])]
+    (if (not= year-map {})
+      (merge passport (year-str->int year-map))
+      passport)))
+
+
+(defn get-passports
+  [input-data]
+  (->> input-data
+       get-str-map
+       (map refine-height-info)
+       (map refine-year-info)))
+
 
 (comment
   (get-passports input-data))
 
 
-(s/def :passport/byr string?)
-(s/def :passport/iyr string?)
-(s/def :passport/eyr string?)
-(s/def :passport/hgt string?)
+
+;; ----------
+;; part1
+;; 유효한 여권
+;;  - 필수 필드를 모두 충족해야한다. cid는 옵션 필드
+;;  - req [:byr :iyr :eyr :hgt :hcl :ecl :pid]
+;;  - opt [:cid]
+;;
+
+(s/def :passport/byr int?)
+(s/def :passport/iyr int?)
+(s/def :passport/eyr int?)
+(s/def :passport/hgt (s/nilable map?))
 (s/def :passport/hcl string?)
 (s/def :passport/ecl string?)
 (s/def :passport/pid string?)
 (s/def :passport/cid string?)
+
 
 (s/def :valid/passport-v1
   (s/keys :req-un [:passport/byr
@@ -80,6 +130,7 @@
 
 (defn valid? [target passport]
   (s/valid? target passport))
+
 
 (defn solve-part-1 [input-data]
   (let [passports (get-passports input-data)]
@@ -112,45 +163,31 @@
 ;; ----------------------------
 ;; year (birth/issue/expiration)
 ;; ----------------------------
-(def four-digit-regex #"^\d{4}$")
+;; byr, iyr, eyr..코드에서 -> 약어 쓰지말고 풀어쓰기
 
-(defn four-digits? [val] (re-matches #"^\d{4}$" val))
+(defn in-range? [start end val] (and (<= start val) (>= end val)))
 
-(defn in-range?
-  [start end str-val]
-  (let [int-val (Integer/parseInt str-val)]
-    (and (<= start int-val) (>= end int-val))))
-
-
-(s/def :constraints/byr (s/and four-digits? #(in-range? 1920 2002 %)))
-(s/def :constraints/iyr (s/and four-digits? #(in-range? 2010 2020 %)))
-(s/def :constraints/eyr (s/and four-digits? #(in-range? 2020 2030 %)))
-
-(comment
-  (s/valid? :constraints/byr "1920")
-  (s/valid? :constraints/byr "2002")
-
-  (s/valid? :constraints/iyr "2010")
-  (s/valid? :constraints/iyr "2020")
-  
-  (s/valid? :constraints/eyr "2020")
-  (s/valid? :constraints/eyr "2030"))
-
+(s/def :constraints/byr #(in-range? 1920 2002 %))
+(s/def :constraints/iyr #(in-range? 2010 2020 %))
+(s/def :constraints/eyr #(in-range? 2020 2030 %))
 
 ;; ------
 ;; height
 ;; ------
-(defmulti in-height-range? (fn [n] (:unit n)))
+(defmulti in-height-range? :unit)
+
 (defmethod in-height-range? :cm [n]
   (let [height (:height n)]
     (and (<= 150 height) (>= 193 height))))
+
 (defmethod in-height-range? :in [n]
   (let [height (:height n)]
     (and (<= 59 height) (>= 76 height))))
-(defmethod in-height-range? "" [n]
-  false)
+
 
 (s/def :constraints/hgt (s/and map? in-height-range?))
+
+
 
 (comment
   (s/valid? :constraints/hgt {:height 156 :unit :cm})
@@ -167,6 +204,7 @@
 ;; ---------
 ;; eye color
 ;; ---------
+ 
 (def eye-colors #{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"})
 (s/def :constraints/ecl (s/and string? #(eye-colors %)))
 
@@ -197,38 +235,14 @@
           :opt-un [:passport-v2/cid]))
 
 
-(defn height-str-to-map
-  [height-str]
-  (let [height-info (next (re-find #"(\d*)(\w*)" height-str))
-        height-str (first height-info)
-        unit-str (last height-info)]
-    (when (and (not= height-str "") (not= unit-str ""))
-      {:height (Integer. height-str)
-       :unit (keyword unit-str)})))
-
-(comment
-  (next (re-find #"(\d+)(\w*)" "166cm"))
-  (height-str-to-map "179cm")
-  (height-str-to-map "179in")
-  (height-str-to-map "cm")
-)
-
-(defn refine-height-info
-  "passport 맵에 hgt키가 있는 경우 문자열 값을 맵으로 변환한다."
-  [passport]
-  (if (:hgt passport)
-    (let [height-str (:hgt passport)]
-      (assoc passport :hgt (height-str-to-map height-str)))
-    passport))
 
 (defn solve-part-2
   [input-data]
   (let [passports (get-passports input-data)]
     (->> passports
-         (map refine-height-info)
          (filter (partial valid? :valid/passport-v2))
          count)))
 
-
 (comment
-  (solve-part-2 input-data))
+  (solve-part-2 input-data)
+)
