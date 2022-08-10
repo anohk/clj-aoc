@@ -36,6 +36,7 @@
          (into {})
          clojure.walk/keywordize-keys)))
 
+
 (def extended-keywords {:byr :birth-year
                         :iyr :issue-year
                         :eyr :expiration-year
@@ -49,6 +50,8 @@
   [keywordized-map]
   (->> (for [[k v] keywordized-map] [(extended-keywords k) v])
        (into {})))
+
+
 
 (defn get-str-map [input-data]
   (->> input-data
@@ -121,34 +124,37 @@
 ;;  - opt [:country-id]
 ;;
 
-(s/def :passport/birth-year int?)
-(s/def :passport/issue-year int?)
-(s/def :passport/expiration-year int?)
-(s/def :passport/height (s/nilable map?))
-(s/def :passport/hair-color string?)
-(s/def :passport/eye-color string?)
-(s/def :passport/passport-id string?)
-(s/def :passport/country-id string?)
+(s/def :passport.v1/birth-year int?)
+(s/def :passport.v1/issue-year int?)
+(s/def :passport.v1/expiration-year int?)
+(s/def :passport.v1/height (s/nilable map?))
+(s/def :passport.v1/hair-color string?)
+(s/def :passport.v1/eye-color string?)
+(s/def :passport.v1/passport-id string?)
+(s/def :passport.v1/country-id string?)
 
 
-(s/def :valid/passport-v1
-  (s/keys :req-un [:passport/birth-year
-                   :passport/issue-year
-                   :passport/expiration-year
-                   :passport/height
-                   :passport/hair-color
-                   :passport/eye-color
-                   :passport/passport-id]
-          :opt-un [:passport/country-id]))
+(s/def :passport.v1/passport
+  (s/keys :req-un [:passport.v1/birth-year
+                   :passport.v1/issue-year
+                   :passport.v1/expiration-year
+                   :passport.v1/height
+                   :passport.v1/hair-color
+                   :passport.v1/eye-color
+                   :passport.v1/passport-id]
+          :opt-un [:passport.v1/country-id]))
 
 (defn valid? [target passport]
   (s/valid? target passport))
+
+(defn explain [target passport]
+  (s/explain target passport))
 
 
 (defn solve-part-1 [input-data]
   (let [passports (get-passports input-data)]
     (->> passports
-         (filter (partial valid? :valid/passport-v1))
+         (filter (partial valid? :passport.v1/passport))
          count)))
 
 (comment
@@ -177,11 +183,12 @@
 ;; year
 ;; ----
 
-(defn in-range? [start end val] (and (<= start val) (>= end val)))
+(s/def :passport.v2/birth-year (s/int-in 1920 2003))
+(s/def :passport.v2/issue-year (s/int-in 2010 2021))
+(s/def :passport.v2/expiration-year (s/int-in 2020 2031))
 
-(s/def :constraints/birth-year #(in-range? 1920 2002 %))
-(s/def :constraints/issue-year #(in-range? 2010 2020 %))
-(s/def :constraints/expiration-year #(in-range? 2020 2030 %))
+(comment
+  (s/explain :passport.v2/birth-year 2004))
 
 ;; ------
 ;; height
@@ -197,62 +204,52 @@
     (and (<= 59 height) (>= 76 height))))
 
 
-(s/def :constraints/height (s/and map? in-height-range?))
+(s/def :passport.v2/height (s/and map? in-height-range?))
 
 
 
 (comment
-  (s/valid? :constraints/height {:height 156 :unit :cm})
-  (s/valid? :constraints/height {:height 194 :unit :cm})
-  (s/valid? :constraints/height {:height 56 :unit :in})
-  (s/valid? :constraints/height {:height 66 :unit :in})
+  (s/valid? :passport.v2/height {:height 156 :unit :cm})
+  (s/valid? :passport.v2/height {:height 194 :unit :cm})
+  (s/valid? :passport.v2/height {:height 56 :unit :in})
+  (s/valid? :passport.v2/height {:height 66 :unit :in})
 )
 
 ;; ----------
 ;; hair color
 ;; ----------
-(s/def :constraints/hair-color #(re-matches #"^#[0-9a-f]{6}$" %))
+(s/def :passport.v2/hair-color #(re-matches #"^#[0-9a-f]{6}$" %))
 
 ;; ---------
 ;; eye color
 ;; ---------
  
 (def eye-colors #{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"})
-(s/def :constraints/eye-color (s/and string? #(eye-colors %)))
+(s/def :passport.v2/eye-color (s/and string? #(eye-colors %)))
 
 ;; -----------
 ;; passport id
 ;; -----------
-(s/def :constraints/passport-id #(re-matches #"[0-9]{9}$" %))
+(s/def :passport.v2/passport-id #(re-matches #"[0-9]{9}$" %))
 
+(s/def :passport.v2/country-id string?)
 
-
-(s/def :passport-v2/birth-year :constraints/birth-year)
-(s/def :passport-v2/issue-year :constraints/issue-year)
-(s/def :passport-v2/expiration-year :constraints/expiration-year)
-(s/def :passport-v2/height :constraints/height)
-(s/def :passport-v2/hair-color :constraints/hair-color)
-(s/def :passport-v2/eye-color :constraints/eye-color)
-(s/def :passport-v2/passport-id :constraints/passport-id)
-(s/def :passport-v2/country-id string?)
-
-(s/def :valid/passport-v2
-  (s/keys :req-un [:passport-v2/birth-year
-                   :passport-v2/issue-year
-                   :passport-v2/expiration-year
-                   :passport-v2/height
-                   :passport-v2/hair-color
-                   :passport-v2/eye-color
-                   :passport-v2/passport-id]
-          :opt-un [:passport-v2/country-id]))
-
+(s/def :passport.v2/passport
+  (s/keys :req-un [:passport.v2/birth-year
+                   :passport.v2/issue-year
+                   :passport.v2/expiration-year
+                   :passport.v2/height
+                   :passport.v2/hair-color
+                   :passport.v2/eye-color
+                   :passport.v2/passport-id]
+          :opt-un [:passport.v2/country-id]))
 
 
 (defn solve-part-2
   [input-data]
   (let [passports (get-passports input-data)]
     (->> passports
-         (filter (partial valid? :valid/passport-v2))
+         (filter (partial valid? :passport.v2/passport))
          count)))
 
 (comment
