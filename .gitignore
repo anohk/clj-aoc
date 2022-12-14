@@ -3,3 +3,6 @@
 .nrepl-port
 lib
 .cpcache
+.calva/
+.clj-kondo/
+.lsp/
