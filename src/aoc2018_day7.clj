@@ -119,20 +119,15 @@
                               (set done)))))
 
 (defn get-possible-works
-  [work-state]
-  (let [rules (:rules work-state)
-        prerequisite-rules (:prerequisite-rules work-state)
-        doing (:doing work-state)
-        done (:done work-state)
-        number-of-workers (:number-of-workers work-state)]
-    (->> prerequisite-rules
-         (filter #(ready? done doing %))
-         (map :work)
-         sort
-         (take (- number-of-workers (count doing)))
-         (mapcat (partial get-rules-by-work rules))
-         (map #(hash-map :work (:work %)
-                         :remain-time (:processing-time %))))))
+  [{:keys [rules prerequisite-rules doing done number-of-workers]}]
+  (->> prerequisite-rules
+       (filter #(ready? done doing %))
+       (map :work)
+       sort
+       (take (- number-of-workers (count doing)))
+       (mapcat (partial get-rules-by-work rules))
+       (map #(hash-map :work (:work %)
+                       :remain-time (:processing-time %)))))
 
 (defn assign-works
   [work-state]
@@ -141,8 +136,7 @@
 
 (defn update-remain-time
   [min-time rule]
-  (let [remain-time (:remain-time rule)]
-    (assoc rule :remain-time (max 0 (- remain-time min-time)))))
+  (assoc rule :remain-time (max 0 (- (:remain-time rule) min-time))))
 
 (defn decrease-min-time
   [min-time doing]
@@ -152,26 +146,21 @@
 (defn decrease-remaining-time
   "doing 목록의 작업들의 잔여 작업 시간을 감소시킨.
    - min-time 만큼 doing 의 remain-time에서 차감"
-  [work-state]
-  (let [doing (:doing work-state)
-        min-time (:min-time work-state)
-        decreased-remaining-time (decrease-min-time min-time doing)]
+  [{:keys [doing min-time] :as work-state}]
+  (let [decreased-remaining-time (decrease-min-time min-time doing)]
     (if (empty? doing)
       work-state
       (assoc work-state :doing decreased-remaining-time))))
 
 (defn increase-processed-time
   [work-state]
-  (let [min-time (:min-time work-state)]
-    (update work-state :processed-time + min-time)))
+  (update work-state :processed-time + (:min-time work-state)))
 
 (defn complete-works
   "작업 완료처리
    - doing 목록 중 작업시간이 최소인 것들을 done 목록으로 옮기고 doing 에서 제거"
-  [work-state]
-  (let [doing (:doing work-state)
-        min-time-works (:min-time-works work-state)
-        removed-min-time-works (remove #(include? (:work %)
+  [{:keys [doing min-time-works] :as work-state}]
+  (let [removed-min-time-works (remove #(include? (:work %)
                                                   (map :work min-time-works))
                                        doing)]
     (-> work-state
@@ -194,9 +183,8 @@
          (map #(hash-map :remain-time min-time :work %)))))
 
 (defn update-min-state
-  [work-state]
-  (let [doing (:doing work-state)
-        min-time (get-min-time doing)
+  [{:keys [doing] :as work-state}]
+  (let [min-time (get-min-time doing)
         min-time-works (get-min-time-works doing)]
     (-> work-state
         (assoc :min-time min-time)
@@ -212,10 +200,8 @@
       decrease-remaining-time))
 
 (defn done?
-  [work-state]
-  (let [done-count (count (:done work-state))
-        rules-count (count (:rules work-state))]
-    (= done-count rules-count)))
+  [{:keys [done rules]}]
+  (= (count done) (count rules)))
 
 (defn solve-part1
   [input-data number-of-workers]
