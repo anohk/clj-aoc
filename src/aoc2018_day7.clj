@@ -162,8 +162,7 @@
 
 (defn increase-processed-time
   [work-state]
-  (let [min-time (:min-time work-state)
-        processed-time (:processed-time work-state)]
+  (let [min-time (:min-time work-state)]
     (update work-state :processed-time + min-time)))
 
 (defn complete-works
@@ -171,7 +170,6 @@
    - doing 목록 중 작업시간이 최소인 것들을 done 목록으로 옮기고 doing 에서 제거"
   [work-state]
   (let [doing (:doing work-state)
-        done (:done work-state)
         min-time-works (:min-time-works work-state)
         removed-min-time-works (remove #(include? (:work %)
                                                   (map :work min-time-works))
@@ -220,9 +218,9 @@
     (= done-count rules-count)))
 
 (defn solve-part1
-  [input-data]
+  [input-data number-of-workers]
   (->> input-data
-       (initiate-work-state 1)
+       (initiate-work-state number-of-workers)
        (iterate execute)
        (filter done?)
        first
@@ -240,5 +238,5 @@
        :processed-time))
 
 (comment
-  (solve-part1 input-data)
+  (solve-part1 input-data 1)
   (solve-part2 input-data 5))
